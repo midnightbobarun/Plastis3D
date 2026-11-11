@@ -1,0 +1,72 @@
+{
+  "description": "Expected bounds for two-primitive.glb. The `parts` entries are the stats.parts the part-mapping test fabricates: PR7's exploder does not exist yet, so the view only consumes stats.parts. Values are computed by make_two_primitive_glb.py from the same box geometry the GLB embeds, not hand-typed.",
+  "parts": [
+    {
+      "meshIndex": 0,
+      "primitiveIndex": 0,
+      "tris": 12,
+      "verts": 36,
+      "bounds": {
+        "min": [
+          -0.5,
+          -0.5,
+          -0.5
+        ],
+        "max": [
+          0.5,
+          0.5,
+          0.5
+        ]
+      }
+    },
+    {
+      "meshIndex": 0,
+      "primitiveIndex": 1,
+      "tris": 12,
+      "verts": 36,
+      "bounds": {
+        "min": [
+          1.5,
+          -0.5,
+          -0.5
+        ],
+        "max": [
+          2.5,
+          0.5,
+          0.5
+        ]
+      }
+    },
+    {
+      "meshIndex": 1,
+      "primitiveIndex": 0,
+      "tris": 12,
+      "verts": 36,
+      "bounds": {
+        "min": [
+          -1.0,
+          2.0,
+          -1.0
+        ],
+        "max": [
+          1.0,
+          4.0,
+          1.0
+        ]
+      }
+    }
+  ],
+  "assetTris": 36,
+  "assetBounds": {
+    "min": [
+      -1.0,
+      -0.5,
+      -1.0
+    ],
+    "max": [
+      2.5,
+      4.0,
+      1.0
+    ]
+  }
+}

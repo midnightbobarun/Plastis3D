@@ -1,0 +1,28 @@
+{
+  "description": "Expected hierarchy / transforms for spliced-export.glb. Names are the GLB JSON names (GLTFLoader sanitizes spaces to underscores, so the Node test asserts on the sanitized forms). The moved part is the exploded hullMesh part moved to [5, 0, 0]; the grouped box sits under the moved group at [2, 0, 0] with local [0, 1, 0].",
+  "movedPartWorld": [
+    5,
+    0,
+    0
+  ],
+  "groupedBoxWorld": [
+    2,
+    1,
+    0
+  ],
+  "shipChildren": [
+    "Hull",
+    "Wing",
+    "SrcCam",
+    "Ship_box"
+  ],
+  "shipTranslation": [
+    10,
+    0,
+    0
+  ],
+  "cameraYfovs": [
+    0.9,
+    0.6981317007977318
+  ]
+}

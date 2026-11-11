@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Plastis3D — mock host (Tier 4)</title>
+    <style>
+      html, body { margin: 0; height: 100%; font-family: system-ui, sans-serif; }
+      #status { padding: 8px 12px; font-size: 13px; border-bottom: 1px solid #888; }
+      #panes { display: flex; height: calc(100% - 37px); }
+      #panes > section { flex: 1; border-right: 1px solid #888; min-width: 0; }
+      #panes > section > h2 { margin: 0; padding: 6px 10px; font-size: 12px; font-weight: 600; }
+      #panes > section > .pane-mount { height: calc(100% - 29px); }
+      #route { border-top: 1px solid #888; min-height: 0; }
+      #route > .route-mount { min-height: 0; }
+      #statusbar { border-top: 1px solid #888; padding: 4px 12px; font-size: 13px; display: flex; gap: 16px; }
+    </style>
+  </head>
+  <body>
+    <div id="status">mock host: starting…</div>
+    <div id="panes"></div>
+    <div id="route"></div>
+    <div id="statusbar"></div>
+    <noscript>Plastis3D mock host needs JavaScript.</noscript>
+    <!--
+      Served by Vite (tests/harness/vite.config.mts). The config aliases
+      '@hermes/plugin-sdk' to mock-host.ts, so the built desktop/plugin.js
+      bundle loads against the mock SDK instead of the real Desktop host.
+      Run: npx vite --config tests/harness/vite.config.mts
+      Then open: http://localhost:5173/tests/harness/mock-host.html
+      Append ?panesOnly=1 for panes only (no editor route, no
+      statusbar) — the PR4 poll test needs a single eligible scene
+      poller.
+    -->
+    <script type="module" src="/tests/harness/mock-host.ts"></script>
+  </body>
+</html>

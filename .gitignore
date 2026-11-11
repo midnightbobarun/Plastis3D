@@ -1,0 +1,38 @@
+plastisweb/
+.DS_Store
+.kilo/
+node_modules/
+__pycache__/
+.pytest_cache/
+*.pyc
+*.pyo
+dist/
+test-results/
+
+# Private design notes, research, plans, and development screenshots.
+/docs/
+
+# Local inspection and one-off live-check tools. Keep reproducible build/lint tools.
+/scripts/*
+!/scripts/build-desktop.mjs
+!/scripts/lint-desktop.mjs
+
+# Local environments, editor/agent settings, credentials, and generated reports.
+.venv/
+venv/
+.env
+.env.*
+!.env.example
+.idea/
+.vscode/
+.agents/
+.codex/
+*.log
+playwright-report/
+blob-report/
+coverage/
+.coverage
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+.cache/

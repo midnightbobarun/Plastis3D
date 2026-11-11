@@ -1,0 +1,69 @@
+{
+  "hashMethod": "SHA-256 hex of positions then normals; each float rounded to float32 (struct '<f'), formatted f\"{(0.0 if v == 0 else v):.5f}\", values joined with ','",
+  "primitives": [
+    {
+      "type": "box",
+      "verts": 24,
+      "tris": 12,
+      "hash": "812530e770e380e3f30b646804e2bff2c2492ae5fcbddafb8d60d25d2d248aa5"
+    },
+    {
+      "type": "sphere",
+      "verts": 221,
+      "tris": 352,
+      "hash": "f1eecc7246a8d165f3544ec6d7ed99e4619072d1d02d6624566fb25a6a8c7360"
+    },
+    {
+      "type": "cylinder",
+      "verts": 70,
+      "tris": 64,
+      "hash": "44cf88d54b6d44b92e216fba56df8dff37a94b33d44fb12a4be04f1d95572c61"
+    },
+    {
+      "type": "cone",
+      "verts": 52,
+      "tris": 32,
+      "hash": "dfee60b036323503559360d0398f143e04aa4b47c217ae173d4736d1a21d6a44"
+    },
+    {
+      "type": "torus",
+      "verts": 325,
+      "tris": 576,
+      "hash": "50d2ff6740475e2992bf943c5b6258b20cb19659758d0429268526b9928658fb"
+    },
+    {
+      "type": "plane",
+      "verts": 4,
+      "tris": 2,
+      "hash": "4d16c7c1f1781b433644931d17c57c858bb7507c212f90114b05dbcdd77dac02"
+    },
+    {
+      "type": "capsule",
+      "verts": 90,
+      "tris": 144,
+      "hash": "f365fc0c6ccdfa39b003a260e24d99c27e16138b0b7706d34adbb425a3ec7566"
+    }
+  ],
+  "floor": {
+    "rotation": [
+      -90,
+      0,
+      0
+    ],
+    "point": [
+      0,
+      1,
+      0
+    ],
+    "expected": [
+      0,
+      0,
+      -1
+    ]
+  },
+  "yfov": 0.6981317007977318,
+  "groupChild": {
+    "group": "Moved group",
+    "child": "Grouped box"
+  }
+}

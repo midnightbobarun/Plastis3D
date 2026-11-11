@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Plastis3D — dispose harness (Tier 4)</title>
+    <style>
+      html, body { margin: 0; height: 100%; font-family: system-ui, sans-serif; }
+      #dispose-mount { width: 800px; height: 600px; }
+      #dispose-result { padding: 8px 12px; font-size: 13px; font-family: monospace; }
+    </style>
+  </head>
+  <body>
+    <div id="dispose-mount"></div>
+    <div id="dispose-result">dispose harness: running…</div>
+    <!--
+      Served by Vite (tests/harness/vite.config.mts) with the repo root
+      as its root, so /src/... imports resolve. Run by dispose.spec.ts.
+    -->
+    <script type="module" src="/tests/harness/dispose-harness.ts"></script>
+  </body>
+</html>

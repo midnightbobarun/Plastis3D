@@ -1,0 +1,32 @@
+name: plastis3d
+version: "0.1.0"
+description: >-
+  Plastis3D — a free, local 3D scene viewer and editor inside Hermes Desktop.
+  Disclosure — no network calls, no telemetry, no credentials, no shell commands, no background processes. Stores scenes and copies of the models and images you import, small preview pictures of your scenes, the latest saved render PNG per scene, and unsaved-edit drafts, in `<HERMES_HOME>/plugin-data/plastis3d/`, which is kept after the plugin is removed. It deletes model and image files from that folder only, and only when no scene uses them any more (after you save an edit, or when old undo history rolls off); it never deletes anything you picked from elsewhere. Each export writes a GLB under `exports/`, replacing that scene's previous export; the durable copy is the one the host save dialog writes where you choose. Reads a model, a texture image, or an OBJ's `.mtl` material file outside that folder only when you pick it from a folder you granted in the Desktop file picker (revocable under Capabilities → Plugins → Folder access; a desktop pick is limited to about 12 MB per file, larger files use a path on the Hermes machine, and granted folders are read-only) or when you or the assistant pass an absolute path to `plastis3d_import_model` on the Hermes backend machine, or you type an image's path into the editor's image picker, or you choose one image file in the browser's file picker (no persistent folder grant). Tools only edit scene data, with one exception: `plastis3d_screenshot` waits up to about 12 seconds for an open scene view to answer, then stores a PNG of that view under `screenshots/` (the newest 20 per scene are kept). Tools run on every surface, including cron and the gateway; with no open view the screenshot tool returns DESKTOP_UNAVAILABLE instead of hanging, and no other tool waits for the viewport. Compressed glTF (Draco, Meshopt, KTX2) is refused.
+author: midnightbobarun
+license: MIT
+tier: community
+category: desktop
+requires_hermes: ">=0.23.0"
+provides_tools:
+  - plastis3d_list_scenes
+  - plastis3d_new_scene
+  - plastis3d_get_scene
+  - plastis3d_check_gltf
+  - plastis3d_analyze
+  - plastis3d_cleanup
+  - plastis3d_build_scene
+  - plastis3d_add_node
+  - plastis3d_update_node
+  - plastis3d_set_material
+  - plastis3d_duplicate_node
+  - plastis3d_delete_node
+  - plastis3d_import_model
+  - plastis3d_open_in_desktop
+  - plastis3d_export_glb
+  - plastis3d_undo
+  - plastis3d_redo
+  - plastis3d_curve
+  - plastis3d_clone
+  - plastis3d_displace
+  - plastis3d_screenshot

@@ -1,0 +1,12 @@
+<!doctype html><html><body><div id="result">Running</div><script type="module">
+import * as THREE from '/node_modules/three/build/three.module.js';
+import { splatMesh } from '/src/scene/splats.ts';
+const renderer=new THREE.WebGLRenderer({preserveDrawingBuffer:true});renderer.setSize(128,128);document.body.append(renderer.domElement);
+const scene=new THREE.Scene(),camera=new THREE.PerspectiveCamera(45,1,.1,10);camera.position.z=3;
+const buffer=new ArrayBuffer(64),view=new DataView(buffer);
+for(let i=0;i<2;i++){view.setFloat32(i*32+8,i===0?.2:0,true);for(let j=0;j<3;j++)view.setFloat32(i*32+12+j*4,.2,true);view.setUint8(i*32+24+(i===0?0:2),255);view.setUint8(i*32+27,200);view.setUint8(i*32+28,255);for(let j=1;j<4;j++)view.setUint8(i*32+28+j,128);}
+const mesh=splatMesh(buffer);scene.add(mesh);
+for(let i=0;i<5;i++)renderer.render(scene,camera);
+const pixels=new Uint8Array(4);renderer.getContext().readPixels(64,64,1,1,renderer.getContext().RGBA,renderer.getContext().UNSIGNED_BYTE,pixels);
+document.getElementById('result').textContent=JSON.stringify(Array.from(pixels));
+</script></body></html>
