@@ -446,7 +446,8 @@ export function Inspector({ rest, scene, selection, stats, sourceKey, files, giz
       {(node.kind === "mesh" || node.kind === "part") && (
         <MaterialSection
           material={material}
-          isOverride={node.kind === "part" && !material}
+          isOverride={node.kind === "part"}
+          onClearOverride={() => updateNodeFields(rest, scene, current.id, { materialId: null })}
           sharedWith={sharedWith}
           onCommit={commitMaterial}
         />
@@ -757,9 +758,11 @@ function MaterialSection({
   isOverride,
   sharedWith,
   onCommit,
+  onClearOverride,
 }: {
   material: MaterialSpec | undefined;
   isOverride: boolean;
+  onClearOverride: () => Promise<unknown>;
   sharedWith: number;
   onCommit: (fields: MaterialFields) => Promise<unknown>;
 }) {
@@ -772,9 +775,9 @@ function MaterialSection({
       id="material"
       title={isOverride ? "Material override" : "Material"}
       icon="palette"
-      summary={`${active?.label ?? "Custom"} · ${paletteName(shown.color) ?? shown.color}`}
+      summary={isOverride && !material ? "No override" : `${active?.label ?? "Custom"} · ${paletteName(shown.color) ?? shown.color}`}
     >
-      {isOverride && (
+      {isOverride && !material && (
         <div className="p3d-help">
           No override yet — editing here creates one for this part only.
         </div>
@@ -792,7 +795,7 @@ function MaterialSection({
               key={preset.id}
               type="button"
               className="p3d-ballbtn"
-              aria-pressed={active?.id === preset.id}
+              aria-pressed={!(isOverride && !material) && active?.id === preset.id}
               title={preset.hint}
               onClick={() => void commit(fields)}
             >
@@ -809,6 +812,18 @@ function MaterialSection({
             </button>
           );
         })}
+        {isOverride && (
+          <button
+            type="button"
+            className="p3d-ballbtn"
+            aria-pressed={!material}
+            title="Restore this part's original material"
+            onClick={() => { if (material) void onClearOverride().catch(onEditError); }}
+          >
+            <span className="p3d-ball-none" aria-hidden="true" />
+            No override
+          </button>
+        )}
       </div>
       <div className="p3d-label">Colour</div>
       <SwatchGrid

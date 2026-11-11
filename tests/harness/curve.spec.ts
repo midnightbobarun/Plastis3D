@@ -54,3 +54,22 @@ test("a lathe takes its own settings, and a curve needs at least two points", as
   await section.getByRole("button", { name: "Remove point 1" }).click();
   await expect(section.getByRole("button", { name: "Remove point 1" })).toBeDisabled(); // two points left
 });
+
+test("a part can return to its original material and undo the change", async ({ page }) => {
+  await gotoEditor(page);
+  const route = page.locator("#route");
+  await route.getByRole("button", { name: "Add", exact: true }).click();
+  await page.locator(".p3d-add").getByText("Curve", { exact: true }).first().click();
+  await expect.poll(() => curveNode(page)).not.toBeNull();
+  const material = route.getByRole("region", { name: "Material override" });
+  const none = material.getByRole("button", { name: "No override", exact: true });
+  await expect(none).toHaveAttribute("aria-pressed", "true");
+  await material.getByRole("button", { name: "Gold", exact: true }).click();
+  await expect.poll(async () => (await curveNode(page))?.materialId).toBeTruthy();
+  await expect(none).toHaveAttribute("aria-pressed", "false");
+  await none.click();
+  await expect.poll(async () => (await curveNode(page))?.materialId ?? null).toBeNull();
+  await expect(none).toHaveAttribute("aria-pressed", "true");
+  await route.getByRole("button", { name: "Undo" }).first().click();
+  await expect.poll(async () => (await curveNode(page))?.materialId).toBeTruthy();
+});

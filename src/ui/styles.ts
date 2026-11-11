@@ -395,6 +395,8 @@ export const P3D_CSS = String.raw`
 .p3d-ball { width: 28px; height: 28px; border-radius: 50%; position: relative; flex: 0 0 auto;
   box-shadow: inset 0 -2px 4px rgba(0,0,0,.18), 0 1px 2px rgba(0,0,0,.18); }
 .p3d-ball--lg { width: 40px; height: 40px; }
+.p3d-ball-none { width: 28px; height: 28px; border-radius: 50%; border: 2px solid currentColor; position: relative; flex: 0 0 auto; }
+.p3d-ball-none::after { content: ""; position: absolute; width: 2px; height: 100%; background: currentColor; left: calc(50% - 1px); transform: rotate(-45deg); }
 .p3d-swatches { display: grid; grid-template-columns: repeat(9, 1fr); gap: 5px; }
 .p3d-swatch { aspect-ratio: 1; width: 100%; padding: 0; border-radius: 50%; border: 1px solid rgba(0,0,0,.12); cursor: pointer;
   background: var(--p3d-sw); transition: transform var(--p3d-fast) var(--p3d-ease), box-shadow var(--p3d-fast) var(--p3d-ease); }

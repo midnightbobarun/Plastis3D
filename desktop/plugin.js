@@ -88470,7 +88470,8 @@ function Inspector({ rest, scene, selection: selection2, stats, sourceKey, files
       MaterialSection,
       {
         material,
-        isOverride: node.kind === "part" && !material,
+        isOverride: node.kind === "part",
+        onClearOverride: () => updateNodeFields(rest, scene, current.id, { materialId: null }),
         sharedWith,
         onCommit: commitMaterial
       }
@@ -88750,7 +88751,8 @@ function MaterialSection({
   material,
   isOverride,
   sharedWith,
-  onCommit
+  onCommit,
+  onClearOverride
 }) {
   const prefs2 = useViewPrefs();
   const shown = material ?? { ...DEFAULT_MATERIAL };
@@ -88762,43 +88764,61 @@ function MaterialSection({
       id: "material",
       title: isOverride ? "Material override" : "Material",
       icon: "palette",
-      summary: `${active?.label ?? "Custom"} \xB7 ${paletteName(shown.color) ?? shown.color}`,
+      summary: isOverride && !material ? "No override" : `${active?.label ?? "Custom"} \xB7 ${paletteName(shown.color) ?? shown.color}`,
       children: [
-        isOverride && /* @__PURE__ */ jsx27("div", { className: "p3d-help", children: "No override yet \u2014 editing here creates one for this part only." }),
+        isOverride && !material && /* @__PURE__ */ jsx27("div", { className: "p3d-help", children: "No override yet \u2014 editing here creates one for this part only." }),
         sharedWith > 0 && /* @__PURE__ */ jsxs24("div", { className: "p3d-help", children: [
           "Shared with ",
           sharedWith === 1 ? "1 other object" : `${sharedWith} other objects`,
           ". Changes here give this one its own copy."
         ] }),
-        /* @__PURE__ */ jsx27("div", { className: "p3d-balls", role: "group", "aria-label": "Material presets", children: MATERIAL_PRESETS.map((preset) => {
-          const fields = presetFields(preset, shown);
-          return /* @__PURE__ */ jsxs24(
+        /* @__PURE__ */ jsxs24("div", { className: "p3d-balls", role: "group", "aria-label": "Material presets", children: [
+          MATERIAL_PRESETS.map((preset) => {
+            const fields = presetFields(preset, shown);
+            return /* @__PURE__ */ jsxs24(
+              "button",
+              {
+                type: "button",
+                className: "p3d-ballbtn",
+                "aria-pressed": !(isOverride && !material) && active?.id === preset.id,
+                title: preset.hint,
+                onClick: () => void commit(fields),
+                children: [
+                  /* @__PURE__ */ jsx27(
+                    MaterialBall,
+                    {
+                      look: {
+                        color: fields.color ?? shown.color,
+                        roughness: preset.roughness,
+                        metalness: preset.metalness,
+                        opacity: preset.opacity,
+                        emissive: fields.emissive
+                      }
+                    }
+                  ),
+                  preset.label
+                ]
+              },
+              preset.id
+            );
+          }),
+          isOverride && /* @__PURE__ */ jsxs24(
             "button",
             {
               type: "button",
               className: "p3d-ballbtn",
-              "aria-pressed": active?.id === preset.id,
-              title: preset.hint,
-              onClick: () => void commit(fields),
+              "aria-pressed": !material,
+              title: "Restore this part's original material",
+              onClick: () => {
+                if (material) void onClearOverride().catch(onEditError);
+              },
               children: [
-                /* @__PURE__ */ jsx27(
-                  MaterialBall,
-                  {
-                    look: {
-                      color: fields.color ?? shown.color,
-                      roughness: preset.roughness,
-                      metalness: preset.metalness,
-                      opacity: preset.opacity,
-                      emissive: fields.emissive
-                    }
-                  }
-                ),
-                preset.label
+                /* @__PURE__ */ jsx27("span", { className: "p3d-ball-none", "aria-hidden": "true" }),
+                "No override"
               ]
-            },
-            preset.id
-          );
-        }) }),
+            }
+          )
+        ] }),
         /* @__PURE__ */ jsx27("div", { className: "p3d-label", children: "Colour" }),
         /* @__PURE__ */ jsx27(
           SwatchGrid,
@@ -92078,6 +92098,8 @@ var P3D_CSS = String.raw`
 .p3d-ball { width: 28px; height: 28px; border-radius: 50%; position: relative; flex: 0 0 auto;
   box-shadow: inset 0 -2px 4px rgba(0,0,0,.18), 0 1px 2px rgba(0,0,0,.18); }
 .p3d-ball--lg { width: 40px; height: 40px; }
+.p3d-ball-none { width: 28px; height: 28px; border-radius: 50%; border: 2px solid currentColor; position: relative; flex: 0 0 auto; }
+.p3d-ball-none::after { content: ""; position: absolute; width: 2px; height: 100%; background: currentColor; left: calc(50% - 1px); transform: rotate(-45deg); }
 .p3d-swatches { display: grid; grid-template-columns: repeat(9, 1fr); gap: 5px; }
 .p3d-swatch { aspect-ratio: 1; width: 100%; padding: 0; border-radius: 50%; border: 1px solid rgba(0,0,0,.12); cursor: pointer;
   background: var(--p3d-sw); transition: transform var(--p3d-fast) var(--p3d-ease), box-shadow var(--p3d-fast) var(--p3d-ease); }

@@ -30,6 +30,7 @@ from fastapi.testclient import TestClient
 
 from plastis3d_scene import glb as glb_mod
 from plastis3d_scene import import_model as import_model_mod
+from plastis3d_scene import mutate
 from plastis3d_scene import primitives
 from plastis3d_scene import tools
 from plastis3d_scene.spec import PlastisError
@@ -416,6 +417,10 @@ def test_set_material_on_part(store, tmp_path):
         assignTo=[part["id"]],
     )
     assert _nodes_by_id(updated)[part["id"]]["materialId"] == "m_red"
+    cleared = mutate.apply_patch(scene_id, 3, [{"op": "update_node", "id": part["id"], "materialId": None}], store=store)
+    assert _nodes_by_id(cleared)[part["id"]].get("materialId") is None
+    restored = tools.undo(scene=scene_id, baseRevision=4)
+    assert _nodes_by_id(restored)[part["id"]]["materialId"] == "m_red"
 
 
 def test_import_undo_redo(store, tmp_path):
