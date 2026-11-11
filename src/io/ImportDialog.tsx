@@ -1,17 +1,9 @@
 import { Checkbox } from "@hermes/plugin-sdk";
 // src/io/ImportDialog.tsx — the import dialog (Stage 5, PR5).
 //
-// Title "Import a model". Two doors in one dialog (ui-design-first-draft
-// §"Import has two doors in one dialog"): the folder door (hidden when
-// ctx.files?.folders is missing — show noFilesDoor, never call
-// requestFolder) and the backend-path door (always present). The folder
-// listing is one level, .glb/.gltf only (isImportableName); a chosen
-// file is stat -> readDataUrl -> base64-decode -> POST imports with
-// { upload: { filename, contentType, bytes }, baseRevision }. The
-// sourceKey and gatewayActivationEpoch() are captured before stat and
-// re-checked before the POST; a change discards the bytes. The dialog
-// stays open on failure (inline mapped sentence) and closes on success,
-// selecting the new model node and framing it when drawable.
+// Model imports use the file picker or an optional backend path. Texture
+// imports also offer previously granted folders. Imports are scoped to the
+// current scene and gateway, remain open on failure, and close on success.
 //
 // Plain HTML dialog (div[role=dialog]) — the SDK Dialog is a compound
 // Radix component and stays plain HTML in 0.1.0 (audit exception).
@@ -91,6 +83,7 @@ export function ImportDialog({
 
   const [resizeSide, setResizeSide] = useState(0);
   const imageInput = useRef<HTMLInputElement>(null);
+  const modelInput = useRef<HTMLInputElement>(null);
   const [resizePosting, setResizePosting] = useState(false);
   const postingSequence = useRef<number | null>(null);
   const [resizeReview, setResizeReview] = useState<ResizeReview | null>(null);
@@ -134,6 +127,7 @@ export function ImportDialog({
 
   // --- folder door -----------------------------------------------------------
   useEffect(() => {
+    if (!isMap) return;
     if (!files) {
       setDoor("noDoor");
       return;
@@ -158,7 +152,7 @@ export function ImportDialog({
     };
     // files is stable per editor mount.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [files]);
+  }, [files, isMap]);
 
   async function loadList(nextFolder: ImportFolder): Promise<void> {
     if (!files) return;
@@ -539,13 +533,13 @@ export function ImportDialog({
 
       {!isMap && (
         <div style={{ marginBottom: 12 }}>
-          <label className="p3d-btn p3d-btn--primary" style={{ display: "inline-flex", cursor: busy ? "default" : "pointer" }}>
+          <button type="button" className="p3d-btn p3d-btn--primary" autoFocus disabled={busy} onClick={() => modelInput.current?.click()}>
             Choose a file…
-            <input type="file" hidden accept=".glb,.gltf,.obj,.stl,.ply" aria-label="Choose a model file" disabled={busy} onChange={(event) => {
-              const file = event.currentTarget.files?.[0]; event.currentTarget.value = "";
-              if (file) void importLocalModel(file);
-            }} />
-          </label>
+          </button>
+          <input ref={modelInput} type="file" hidden accept=".glb,.gltf,.obj,.stl,.ply" aria-label="Choose a model file" disabled={busy} onChange={(event) => {
+            const file = event.currentTarget.files?.[0]; event.currentTarget.value = "";
+            if (file) void importLocalModel(file);
+          }} />
           <span className="p3d-help" style={{ marginLeft: 8 }}>GLB, glTF, OBJ, STL or PLY</span>
         </div>
       )}
@@ -554,15 +548,15 @@ export function ImportDialog({
 
       {isMap && <p style={{ fontWeight: 600, margin: "0 0 8px" }}>Other ways to choose an image</p>}
       {isMap && <p className="p3d-help" style={{ margin: "0 0 8px" }}>Use an approved folder below, or enter a path on the Hermes computer. Folder access can be managed under Capabilities → Plugins → Folder access.</p>}
-      {door === "noDoor" && (
+      {isMap && door === "noDoor" && (
         <p style={{ margin: "0 0 12px" }}>{COPY.noFilesDoor}</p>
       )}
-      {door === "loading" && (
+      {isMap && door === "loading" && (
         <p style={{ margin: "0 0 12px" }}>
           <GlyphSpinner ariaLabel="Loading folders" /> Checking folders…
         </p>
       )}
-      {(door === "empty" || door === "again") && (
+      {isMap && (door === "empty" || door === "again") && (
         <div style={{ marginBottom: 12 }}>
           {doorMessage && <p style={{ margin: "0 0 8px" }}>{doorMessage}</p>}
           <Button variant="outline" onClick={() => void chooseFolder()}>
@@ -570,7 +564,7 @@ export function ImportDialog({
           </Button>
         </div>
       )}
-      {door === "ready" && folder && (
+      {isMap && door === "ready" && folder && (
         <div style={{ marginBottom: 12 }}>
           <div style={{ fontWeight: 700, marginBottom: 4 }}>
             {folder.name}
@@ -618,14 +612,15 @@ export function ImportDialog({
         </div>
       )}
 
-      <label style={{ display: "block", marginBottom: 12 }}>
+      <details open={isMap || undefined} style={{ marginBottom: 12 }}>
+        <summary style={isMap ? { display: "none" } : undefined}>Import using a path</summary>
+      <label style={{ display: "block", marginTop: isMap ? 0 : 8 }}>
         <span style={{ display: "block", fontSize: 12, opacity: 0.7 }}>
           Path on the Hermes computer
         </span>
         <span style={{ display: "flex", gap: 8, marginTop: 4 }}>
           <Input
             value={pathValue}
-            autoFocus={!isMap}
             aria-label="Path on the Hermes computer"
             placeholder={isMap ? "/path/to/picture.png" : "/path/to/model.glb"}
             onChange={(e) => setPathValue(e.target.value)}
@@ -642,6 +637,7 @@ export function ImportDialog({
           </Button>
         </span>
       </label>
+      </details>
 
       {busy && (
         <p style={{ margin: "0 0 8px" }}>

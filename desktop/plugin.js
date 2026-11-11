@@ -17586,7 +17586,7 @@ var COPY = {
   noSceneTitle: "Make something in 3D",
   noSceneBody: "Try a sample, build from simple shapes, or bring in a model file (GLB, glTF, OBJ, STL or PLY). You can also ask Hermes to build a scene for you.",
   compressed: "This file uses Draco, Meshopt, or KTX2. Plastis3D can't decode those. Export an uncompressed glTF with buffers and images embedded and import that.",
-  desktopCap: "The desktop reader has a size limit. If the Hermes backend is this computer, ask the assistant to import the file's full path.",
+  desktopCap: "The desktop reader has a size limit. For a larger file, use its full path on the Hermes computer.",
   tooLarge: "Too large to draw in the Hermes window.",
   storedNotDrawn: "Plastis3D stored this model but will not draw it.",
   notTriangles: "It isn't a triangle mesh.",
@@ -85023,6 +85023,7 @@ function ImportDialog({
   const [error, setError] = useState13(null);
   const [resizeSide, setResizeSide] = useState13(0);
   const imageInput = useRef8(null);
+  const modelInput = useRef8(null);
   const [resizePosting, setResizePosting] = useState13(false);
   const postingSequence = useRef8(null);
   const [resizeReview, setResizeReview] = useState13(null);
@@ -85088,6 +85089,7 @@ function ImportDialog({
     setBusy(false);
   }
   useEffect13(() => {
+    if (!isMap) return;
     if (!files) {
       setDoor("noDoor");
       return;
@@ -85107,7 +85109,7 @@ function ImportDialog({
     return () => {
       cancelled = true;
     };
-  }, [files]);
+  }, [files, isMap]);
   async function loadList(nextFolder) {
     if (!files) return;
     setDoorMessage(null);
@@ -85475,14 +85477,12 @@ function ImportDialog({
           resizePosting && /* @__PURE__ */ jsx18("p", { role: "status", children: COPY.resizeSaving })
         ] }),
         !isMap && /* @__PURE__ */ jsxs17("div", { style: { marginBottom: 12 }, children: [
-          /* @__PURE__ */ jsxs17("label", { className: "p3d-btn p3d-btn--primary", style: { display: "inline-flex", cursor: busy ? "default" : "pointer" }, children: [
-            "Choose a file\u2026",
-            /* @__PURE__ */ jsx18("input", { type: "file", hidden: true, accept: ".glb,.gltf,.obj,.stl,.ply", "aria-label": "Choose a model file", disabled: busy, onChange: (event) => {
-              const file = event.currentTarget.files?.[0];
-              event.currentTarget.value = "";
-              if (file) void importLocalModel(file);
-            } })
-          ] }),
+          /* @__PURE__ */ jsx18("button", { type: "button", className: "p3d-btn p3d-btn--primary", autoFocus: true, disabled: busy, onClick: () => modelInput.current?.click(), children: "Choose a file\u2026" }),
+          /* @__PURE__ */ jsx18("input", { ref: modelInput, type: "file", hidden: true, accept: ".glb,.gltf,.obj,.stl,.ply", "aria-label": "Choose a model file", disabled: busy, onChange: (event) => {
+            const file = event.currentTarget.files?.[0];
+            event.currentTarget.value = "";
+            if (file) void importLocalModel(file);
+          } }),
           /* @__PURE__ */ jsx18("span", { className: "p3d-help", style: { marginLeft: 8 }, children: "GLB, glTF, OBJ, STL or PLY" })
         ] }),
         !isMap && /* @__PURE__ */ jsxs17("label", { style: { display: "flex", alignItems: "flex-start", gap: 8, margin: "0 0 14px", lineHeight: 1.4 }, children: [
@@ -85492,16 +85492,16 @@ function ImportDialog({
         ] }),
         isMap && /* @__PURE__ */ jsx18("p", { style: { fontWeight: 600, margin: "0 0 8px" }, children: "Other ways to choose an image" }),
         isMap && /* @__PURE__ */ jsx18("p", { className: "p3d-help", style: { margin: "0 0 8px" }, children: "Use an approved folder below, or enter a path on the Hermes computer. Folder access can be managed under Capabilities \u2192 Plugins \u2192 Folder access." }),
-        door === "noDoor" && /* @__PURE__ */ jsx18("p", { style: { margin: "0 0 12px" }, children: COPY.noFilesDoor }),
-        door === "loading" && /* @__PURE__ */ jsxs17("p", { style: { margin: "0 0 12px" }, children: [
+        isMap && door === "noDoor" && /* @__PURE__ */ jsx18("p", { style: { margin: "0 0 12px" }, children: COPY.noFilesDoor }),
+        isMap && door === "loading" && /* @__PURE__ */ jsxs17("p", { style: { margin: "0 0 12px" }, children: [
           /* @__PURE__ */ jsx18(GlyphSpinner, { ariaLabel: "Loading folders" }),
           " Checking folders\u2026"
         ] }),
-        (door === "empty" || door === "again") && /* @__PURE__ */ jsxs17("div", { style: { marginBottom: 12 }, children: [
+        isMap && (door === "empty" || door === "again") && /* @__PURE__ */ jsxs17("div", { style: { marginBottom: 12 }, children: [
           doorMessage && /* @__PURE__ */ jsx18("p", { style: { margin: "0 0 8px" }, children: doorMessage }),
           /* @__PURE__ */ jsx18(Button3, { variant: "outline", onClick: () => void chooseFolder(), children: "Choose a folder" })
         ] }),
-        door === "ready" && folder && /* @__PURE__ */ jsxs17("div", { style: { marginBottom: 12 }, children: [
+        isMap && door === "ready" && folder && /* @__PURE__ */ jsxs17("div", { style: { marginBottom: 12 }, children: [
           /* @__PURE__ */ jsx18("div", { style: { fontWeight: 700, marginBottom: 4 }, children: folder.name }),
           doorMessage && /* @__PURE__ */ jsx18("p", { style: { margin: "0 0 8px" }, children: doorMessage }),
           /* @__PURE__ */ jsxs17(
@@ -85539,31 +85539,33 @@ function ImportDialog({
           ),
           truncated && /* @__PURE__ */ jsx18("p", { style: { margin: "8px 0 0" }, children: "This folder has more files than Plastis3D listed. Use a path." })
         ] }),
-        /* @__PURE__ */ jsxs17("label", { style: { display: "block", marginBottom: 12 }, children: [
-          /* @__PURE__ */ jsx18("span", { style: { display: "block", fontSize: 12, opacity: 0.7 }, children: "Path on the Hermes computer" }),
-          /* @__PURE__ */ jsxs17("span", { style: { display: "flex", gap: 8, marginTop: 4 }, children: [
-            /* @__PURE__ */ jsx18(
-              Input,
-              {
-                value: pathValue,
-                autoFocus: !isMap,
-                "aria-label": "Path on the Hermes computer",
-                placeholder: isMap ? "/path/to/picture.png" : "/path/to/model.glb",
-                onChange: (e) => setPathValue(e.target.value),
-                onKeyDown: (e) => {
-                  if (e.key === "Enter") void importFromPath();
+        /* @__PURE__ */ jsxs17("details", { open: isMap || void 0, style: { marginBottom: 12 }, children: [
+          /* @__PURE__ */ jsx18("summary", { style: isMap ? { display: "none" } : void 0, children: "Import using a path" }),
+          /* @__PURE__ */ jsxs17("label", { style: { display: "block", marginTop: isMap ? 0 : 8 }, children: [
+            /* @__PURE__ */ jsx18("span", { style: { display: "block", fontSize: 12, opacity: 0.7 }, children: "Path on the Hermes computer" }),
+            /* @__PURE__ */ jsxs17("span", { style: { display: "flex", gap: 8, marginTop: 4 }, children: [
+              /* @__PURE__ */ jsx18(
+                Input,
+                {
+                  value: pathValue,
+                  "aria-label": "Path on the Hermes computer",
+                  placeholder: isMap ? "/path/to/picture.png" : "/path/to/model.glb",
+                  onChange: (e) => setPathValue(e.target.value),
+                  onKeyDown: (e) => {
+                    if (e.key === "Enter") void importFromPath();
+                  }
                 }
-              }
-            ),
-            /* @__PURE__ */ jsx18(
-              Button3,
-              {
-                variant: "outline",
-                disabled: busy || resizeReview !== null || pathValue.trim() === "",
-                onClick: () => void importFromPath(),
-                children: isMap ? COPY.mapUse : "Import path"
-              }
-            )
+              ),
+              /* @__PURE__ */ jsx18(
+                Button3,
+                {
+                  variant: "outline",
+                  disabled: busy || resizeReview !== null || pathValue.trim() === "",
+                  onClick: () => void importFromPath(),
+                  children: isMap ? COPY.mapUse : "Import path"
+                }
+              )
+            ] })
           ] })
         ] }),
         busy && /* @__PURE__ */ jsxs17("p", { style: { margin: "0 0 8px" }, children: [

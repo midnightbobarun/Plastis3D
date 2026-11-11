@@ -88,6 +88,7 @@ test("imported asset renders from the mock's base64 bytes", async ({ page }) => 
 
   await openImport(page);
   const dialog = page.getByRole("dialog", { name: "Import a model" });
+  await dialog.getByText("Import using a path").click();
   await dialog
     .getByLabel("Path on the Hermes computer")
     .fill("/backend/model.glb");

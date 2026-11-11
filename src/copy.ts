@@ -234,7 +234,7 @@ export const COPY = {
   compressed:
     "This file uses Draco, Meshopt, or KTX2. Plastis3D can't decode those. Export an uncompressed glTF with buffers and images embedded and import that.",
   desktopCap:
-    "The desktop reader has a size limit. If the Hermes backend is this computer, ask the assistant to import the file's full path.",
+    "The desktop reader has a size limit. For a larger file, use its full path on the Hermes computer.",
   tooLarge: "Too large to draw in the Hermes window.",
   storedNotDrawn: "Plastis3D stored this model but will not draw it.",
   notTriangles: "It isn't a triangle mesh.",

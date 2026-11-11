@@ -50,6 +50,7 @@ test("Mod+S does nothing while a dialog is open", async ({ page }) => {
   await page.getByRole("button", { name: "Open a model" }).click();
   const dialog = page.getByRole("dialog", { name: "Import a model" });
   await expect(dialog).toBeVisible();
+  await dialog.getByText("Import using a path").click();
   await dialog.getByLabel("Path on the Hermes computer").focus();
   await page.keyboard.press("ControlOrMeta+s");
   await page.waitForTimeout(600);

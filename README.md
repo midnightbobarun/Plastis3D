@@ -28,7 +28,7 @@ View preferences affect previews only, not scene data or exports. They are saved
 | --- | --- |
 | GLB, glTF | Buffers and images must be embedded. A `.gltf` is stored as a GLB. |
 | STL | ASCII and binary little-endian. One mesh, flat shaded. |
-| OBJ | Positions, texture coordinates, normals and faces; n-gons are split into triangles. One mesh with the first material only. The colour (`Kd`, `d`) comes from the `.mtl` beside the file. Texture images are not read. |
+| OBJ | Positions, texture coordinates, normals and faces; n-gons are split into triangles. One mesh with the first material only. When imported by backend path, the colour (`Kd`, `d`) comes from the `.mtl` beside the file. The file picker imports the OBJ alone, without its `.mtl`. Texture images are not read. |
 | PLY | ASCII, binary little-endian and binary big-endian. Vertex colours and normals are kept. |
 | Gaussian PLY, SPLAT | Binary little-endian Gaussian PLY and `.splat` become splat nodes; see Render and Gaussian splats below. |
 
@@ -36,7 +36,7 @@ OBJ, STL and ordinary mesh PLY are read as one mesh, with no axis or unit conver
 
 Imports become editable parts by default; use `explode: false` to keep one locked model. Animated, skinned and morphing files require the locked option. No automatic unit or axis guessing: meters, Y-up.
 
-The desktop picker accepts roughly 12 MiB per file; base64 encoding and request overhead reduce the usable size slightly. Larger model files use an absolute path on the Hermes machine. The imported-model preview cap is 100,000 triangles and approximately 12 MiB per asset: larger stored models show bounds and explanatory overlays. Stored triangle counts include models that are not drawn. Scenes are limited to 2,000 nodes, 256 materials and 64 assets.
+The desktop picker accepts roughly 12 MiB per file; base64 encoding and request overhead reduce the usable size slightly. For larger model files, expand **Import using a path** and enter an absolute path on the Hermes machine. The imported-model preview cap is 100,000 triangles and approximately 12 MiB per asset: larger stored models show bounds and explanatory overlays. Stored triangle counts include models that are not drawn. Scenes are limited to 2,000 nodes, 256 materials and 64 assets.
 
 ## Textures and image resizing
 
