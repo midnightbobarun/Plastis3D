@@ -917,7 +917,8 @@ def test_splice_refuses_top_level_extensions_only(store):
 
 @pytest.mark.parametrize("explode", [True, False])
 @pytest.mark.parametrize("source", ["primitive", "imported"])
-def test_saved_glb_can_be_reopened_and_saved_repeatedly(store, explode, source):
+@pytest.mark.parametrize("same_scene", [True, False])
+def test_saved_glb_can_be_reopened_and_saved_repeatedly(store, explode, source, same_scene):
     from plastis3d_scene.import_model import import_bytes
 
     # Default scenes include a camera and a punctual light, as in the editor.
@@ -931,10 +932,12 @@ def test_saved_glb_can_be_reopened_and_saved_repeatedly(store, explode, source):
     first = export_scene(scene, store)
     data = Path(first["path"]).read_bytes()
     for cycle in range(3):
-        reopened = store.create_scene("Reopened", "reopened-%d" % cycle)
-        import_bytes(reopened["id"], store, data, original_name="saved.glb", source_format="glb", base_revision=1, explode=explode)
+        reopened = store.get_scene(scene["id"]) if same_scene else store.create_scene("Reopened", "reopened-%d" % cycle)
+        import_bytes(reopened["id"], store, data, original_name="saved.glb", source_format="glb", base_revision=reopened["revision"], explode=explode)
         result = export_scene(store.get_scene(reopened["id"]), store)
-        assert result["stats"]["tris"] == first["stats"]["tris"]
+        # Open adds a file to the scene; repeatedly opening a whole-scene
+        # export doubles the geometry when the existing objects stay there.
+        assert result["stats"]["tris"] == first["stats"]["tris"] * (2 ** (cycle + 1) if same_scene else 1)
         document, _ = _parse_glb(result["path"])
         lights = document["extensions"]["KHR_lights_punctual"]["lights"]
         for node in document["nodes"]:

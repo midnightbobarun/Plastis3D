@@ -114,6 +114,8 @@ Disclosure — no network calls, no telemetry, no credentials, no shell commands
 
 Only contributors need a local build environment. With Node.js/npm installed, run `npm ci` followed by `npm run build:desktop`. This rebuilds `desktop/plugin.js` and the third-party notices from the included source and lockfile.
 
+After changing Python backend code, restart the Hermes process serving the plugin API before testing. The backend caches imported Python modules; rebuilding or reloading the desktop UI alone does not load those changes. This also applies to a development install linked directly to this source folder.
+
 Checks:
 
 ```sh
