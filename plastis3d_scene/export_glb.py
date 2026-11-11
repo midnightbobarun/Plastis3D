@@ -54,11 +54,10 @@ Fail-closed cuts (no file is written on any of them):
   now *rebased*, not refused, but only when every reference stays inside
   the copy); a ``part`` whose primitive is skinned or has morph targets
   (C-05: deformation reaches export only through a locked ``model``); a
-  non-empty ``extensionsRequired``; any ``extensions`` object
-  on any copied node (including source ``KHR_lights_punctual``), mesh,
-  primitive, camera, or the selected scene, or a top-level
-  ``extensions`` object (never copied); an ``extensionsUsed`` name
-  that does not appear on the copied material or texture JSON
+  non-empty ``extensionsRequired``; unsupported node or document
+  extensions (``KHR_lights_punctual`` is copied with rebased light indexes);
+  any ``extensions`` object on a mesh, primitive, camera, or selected scene;
+  an ``extensionsUsed`` name outside punctual lights or copied material/texture JSON
   (material/texture extensions, including clearcoat, ride along); any
   index (mesh/material/accessor/node/camera/texture/image/sampler)
   outside the copied set; a missing asset file on disk, or an asset
@@ -609,12 +608,6 @@ def _splice_asset(asset: dict, store: Any, builder: _BinBuilder, out: dict, dead
             % (label, list(gltf["extensionsRequired"])),
             path="/assets",
         )
-    # A top-level `extensions` object is refused below, after the
-    # per-node / per-mesh cuts — so a fixture with a node-level
-    # KHR_lights_punctual extension (which needs the top-level
-    # lights array to exist for the scan to pass) isolates the node
-    # cut instead of tripping the top-level one first.
-
     nodes_src = gltf.get("nodes", []) or []
     meshes_src = gltf.get("meshes", []) or []
     materials_src = gltf.get("materials", []) or []
@@ -663,7 +656,18 @@ def _splice_asset(asset: dict, store: Any, builder: _BinBuilder, out: dict, dead
             path="/assets",
         )
 
-    # --- Copied nodes: reachable from the roots, extensions refused --------
+    # Punctual lights are also emitted by our own writer. Other node and
+    # document extensions still need an explicit copying implementation.
+    document_extensions = gltf.get("extensions", {}) or {}
+    if not isinstance(document_extensions, dict) or set(document_extensions) - {"KHR_lights_punctual"}:
+        _fail("EXPORT_FAILED", "extension: %s has unsupported top-level extensions" % label, path="/assets")
+    punctual = document_extensions.get("KHR_lights_punctual", {})
+    if not isinstance(punctual, dict) or punctual.get("extensions"):
+        _fail("EXPORT_FAILED", "extension: %s has unsupported punctual-light metadata" % label, path="/assets")
+    for light in punctual.get("lights", []):
+        if not isinstance(light, dict) or light.get("extensions") or (isinstance(light.get("spot"), dict) and light["spot"].get("extensions")):
+            _fail("EXPORT_FAILED", "extension: %s has unsupported light extensions" % label, path="/assets")
+    # --- Copied nodes: reachable from the roots ----------------------------
     reachable: list = []
     seen: set = set()
     stack = list(reversed(roots))
@@ -679,7 +683,13 @@ def _splice_asset(asset: dict, store: Any, builder: _BinBuilder, out: dict, dead
         seen.add(index)
         reachable.append(index)
         node = nodes_src[index]
-        if node.get("extensions"):
+        node_extensions = node.get("extensions", {}) or {}
+        if not isinstance(node_extensions, dict):
+            _fail("EXPORT_FAILED", "extension: %s node %d extensions must be an object" % (label, index), path="/assets")
+        light_ref = node_extensions.get("KHR_lights_punctual", {})
+        if light_ref.get("extensions"):
+            _fail("EXPORT_FAILED", "extension: %s has unsupported light-reference extensions" % label, path="/assets")
+        if set(node_extensions) - {"KHR_lights_punctual"}:
             _fail(
                 "EXPORT_FAILED",
                 "extension: %s node %d has an extensions object (%s); node-level "
@@ -819,6 +829,8 @@ def _splice_asset(asset: dict, store: Any, builder: _BinBuilder, out: dict, dead
         if texture.get("extensions"):
             extension_names.update(texture["extensions"].keys())
     for name in gltf.get("extensionsUsed", []) or []:
+        if name == "KHR_lights_punctual" and name in document_extensions:
+            continue
         if name not in extension_names:
             _fail(
                 "EXPORT_FAILED",
@@ -826,13 +838,6 @@ def _splice_asset(asset: dict, store: Any, builder: _BinBuilder, out: dict, dead
                 "material or texture JSON" % (label, name),
                 path="/assets",
             )
-    if gltf.get("extensions"):
-        _fail(
-            "EXPORT_FAILED",
-            "extension: %s has a top-level extensions object, which the splice "
-            "does not copy" % label,
-            path="/assets",
-        )
 
     # --- Copied cameras: referenced by copied nodes only, source order ------
     referenced_cameras: list = []
@@ -850,7 +855,7 @@ def _splice_asset(asset: dict, store: Any, builder: _BinBuilder, out: dict, dead
 
     # --- Copy ------------------------------------------------------------------
     _check_deadline(deadline)
-    builder.reserve_metadata({key: gltf.get(key, []) for key in ("bufferViews", "accessors", "images", "samplers", "textures", "materials", "meshes", "cameras")})
+    builder.reserve_metadata({key: gltf.get(key, []) for key in ("bufferViews", "accessors", "images", "samplers", "textures", "materials", "meshes", "cameras", "extensions")})
     # Buffers: whole-BIN copy, one base offset per source buffer (the
     # one-buffer case is the same path with one base). The general
     # remap also covers a stored .glb with extra data: buffers.
@@ -953,7 +958,7 @@ def _instance_nodes(
     first_index: int,
     skins_out: Optional[list] = None,
     animations_out: Optional[list] = None,
-    *, owner_name="Model", owner_index=None,
+    *, owner_name="Model", owner_index=None, lights_out=None,
 ) -> tuple:
     """Fresh glTF nodes for one ``model`` node's copy of the asset subtree.
 
@@ -992,8 +997,18 @@ def _instance_nodes(
     mapping = {old: first_index + i for i, old in enumerate(order)}
     skin_first = len(skins_out) if skins_out is not None else 0
     nodes: list = []
+    light_map: dict = {}
     for old in order:
         node = copy.deepcopy(nodes_src[old])
+        light_ref = node.get("extensions", {}).get("KHR_lights_punctual")
+        if light_ref is not None:
+            if lights_out is None:
+                _fail("EXPORT_FAILED", "extension: missing output light collection", path="/assets")
+            source_light = light_ref["light"]
+            if source_light not in light_map:
+                light_map[source_light] = len(lights_out)
+                lights_out.append(copy.deepcopy(spliced.gltf["extensions"]["KHR_lights_punctual"]["lights"][source_light]))
+            light_ref["light"] = light_map[source_light]
         if "skin" in node:
             node["skin"] = skin_first + node["skin"]
         if "mesh" in node:
@@ -1439,7 +1454,7 @@ def _export_scene(scene: dict, store: Any, timeout: float = EXPORT_TIMEOUT, *, p
         if node.get("kind") == "model":
             if inspection_limit is not None:
                 if not hasattr(spliced, "inspection_instance_bytes"):
-                    records = {"nodes": [spliced.gltf["nodes"][i] for i in spliced.reachable], "skins": spliced.gltf.get("skins", []), "animations": spliced.gltf.get("animations", [])}
+                    records = {"nodes": [spliced.gltf["nodes"][i] for i in spliced.reachable], "skins": spliced.gltf.get("skins", []), "animations": spliced.gltf.get("animations", []), "lights": spliced.gltf.get("extensions", {}).get("KHR_lights_punctual", {}).get("lights", [])}
                     spliced.inspection_instance_bytes = len(json.dumps(records, separators=(",", ":"))) * 2 + 512 * (len(spliced.reachable) + len(records["skins"]) + len(records["animations"]))
                 builder.reserve_metadata_size(spliced.inspection_instance_bytes)
             instance_nodes, roots = _instance_nodes(
@@ -1447,7 +1462,7 @@ def _export_scene(scene: dict, store: Any, timeout: float = EXPORT_TIMEOUT, *, p
                 len(nodes) + len(fresh_nodes),
                 gltf_skins,
                 gltf_animations,
-                owner_name=node.get("name") or "Model", owner_index=owner_index_by_id[node["id"]],
+                owner_name=node.get("name") or "Model", owner_index=owner_index_by_id[node["id"]], lights_out=gltf_lights,
             )
             fresh_nodes.extend(instance_nodes)
             instance_roots_by_spec_id[node["id"]] = roots

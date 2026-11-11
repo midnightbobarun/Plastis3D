@@ -832,9 +832,8 @@ def test_splice_refuses_nonempty_extensions_required(store):
     _expect_failed(store, _refusal_scene(store, "extreq", glb_bytes, parts))
 
 
-def test_splice_refuses_node_level_extension(store):
-    # A source KHR_lights_punctual node: the top-level lights array
-    # must exist for the scan to pass, so this isolates the node cut.
+def test_splice_copies_punctual_light_and_rebases_its_index(store):
+    # Imported light indexes must not point at the scene's own default light.
     lights = [{"type": "directional", "color": [1.0, 1.0, 1.0], "intensity": 1.0}]
     glb_bytes, parts = _three_part_source(
         nodes=[
@@ -850,7 +849,25 @@ def test_splice_refuses_node_level_extension(store):
             "extensionsUsed": ["KHR_lights_punctual"],
         },
     )
-    _expect_failed(store, _refusal_scene(store, "node-ext", glb_bytes, parts))
+    scene = _refusal_scene(store, "node-ext", glb_bytes, parts)
+    second = copy.deepcopy(next(n for n in scene["nodes"] if n["kind"] == "model"))
+    second["id"] = "second-model"
+    scene["nodes"].append(second)
+    result = export_scene(scene, store)
+    gltf, _ = _parse_glb(result["path"])
+    output_lights = gltf["extensions"]["KHR_lights_punctual"]["lights"]
+    references = [node["extensions"]["KHR_lights_punctual"]["light"] for node in gltf["nodes"] if "KHR_lights_punctual" in node.get("extensions", {})]
+    assert len(references) == len(output_lights) == 3  # scene light plus two instances
+    assert len(set(references)) == 3
+    assert output_lights[references[-2]] == lights[0]
+    assert output_lights[references[-1]] == lights[0]
+    assert gltf["extensionsUsed"].count("KHR_lights_punctual") == 1
+
+
+@pytest.mark.parametrize("extensions", [{"VENDOR_node": {}}, ["invalid"]])
+def test_splice_still_refuses_unknown_node_extension(store, extensions):
+    data, parts = _three_part_source(nodes=[{"mesh": 0, "extensions": extensions}, {"mesh": 1}])
+    _expect_failed(store, _refusal_scene(store, "unknown-node-ext", data, parts))
 
 
 def test_splice_refuses_extensions_used_not_on_material_or_texture(store):
@@ -892,11 +909,38 @@ def test_splice_refuses_top_level_extensions_only(store):
     # No node extension, no extensionsUsed name to trip first: the
     # top-level extensions object alone is refused because it is
     # never copied.
-    lights = [{"type": "directional", "color": [1.0, 1.0, 1.0], "intensity": 1.0}]
     glb_bytes, parts = _three_part_source(
-        extra={"extensions": {"KHR_lights_punctual": {"lights": lights}}}
+        extra={"extensions": {"VENDOR_document": {}}}
     )
     _expect_failed(store, _refusal_scene(store, "top-ext", glb_bytes, parts))
+
+
+@pytest.mark.parametrize("explode", [True, False])
+@pytest.mark.parametrize("source", ["primitive", "imported"])
+def test_saved_glb_can_be_reopened_and_saved_repeatedly(store, explode, source):
+    from plastis3d_scene.import_model import import_bytes
+
+    # Default scenes include a camera and a punctual light, as in the editor.
+    scene = store.create_scene("Original", "original")
+    if source == "primitive":
+        scene["nodes"].append({"id": "box", "name": "Box", "kind": "mesh", "primitive": {"type": "box"}, "materialId": "m_default", "transform": {"t": [0, 0.5, 0], "r": [0, 0, 0], "s": [1, 1, 1]}})
+        scene = store.write_scene(scene["id"], scene, base_revision=1)["scene"]
+    else:
+        import_bytes(scene["id"], store, (FIXTURES / "two-primitive.glb").read_bytes(), original_name="external.glb", source_format="glb", base_revision=1, explode=explode)
+        scene = store.get_scene(scene["id"])
+    first = export_scene(scene, store)
+    data = Path(first["path"]).read_bytes()
+    for cycle in range(3):
+        reopened = store.create_scene("Reopened", "reopened-%d" % cycle)
+        import_bytes(reopened["id"], store, data, original_name="saved.glb", source_format="glb", base_revision=1, explode=explode)
+        result = export_scene(store.get_scene(reopened["id"]), store)
+        assert result["stats"]["tris"] == first["stats"]["tris"]
+        document, _ = _parse_glb(result["path"])
+        lights = document["extensions"]["KHR_lights_punctual"]["lights"]
+        for node in document["nodes"]:
+            if "KHR_lights_punctual" in node.get("extensions", {}):
+                assert 0 <= node["extensions"]["KHR_lights_punctual"]["light"] < len(lights)
+        data = Path(result["path"]).read_bytes()
 
 
 # --- E2E gate test (stage-3 §5) -------------------------------------------------
